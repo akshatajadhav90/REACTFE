@@ -1,17 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-
+const API_URL = "http://localhost:4008/api/auth"; // Replace with your API base URL
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
   const navigate = useNavigate();
 
-//   event handler
-  const handleLogin = (e) => {
+  // Event handler for login
+  const handleLogin = async (e) => {
     e.preventDefault();
 
     // Basic validation
@@ -25,11 +25,28 @@ const LoginPage = () => {
       return;
     }
 
-    setError(""); // Clear any previous error
-    console.log("Email:", email);
-    console.log("Password:", password);
-    alert("Login Successful!");
-    navigate("/users");
+    try {
+      setError(""); // Clear any previous error
+
+      // Make API request
+      const response = await axios.post(`${API_URL}/login`, {
+        email,
+        password,
+      });
+
+      const { token } = response.data;
+
+      // Save the token to localStorage or sessionStorage
+      localStorage.setItem("authToken", token);
+
+      alert("Login Successful!");
+      navigate("/users"); // Redirect to the users page
+    } catch (err) {
+      // Handle API errors
+      const errorMessage =
+        err.response?.data?.message || "An error occurred during login.";
+      setError(errorMessage);
+    }
   };
 
   return (
@@ -64,6 +81,8 @@ const LoginPage = () => {
     </div>
   );
 };
+
+
 
 // const styles ={}
 

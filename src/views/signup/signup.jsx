@@ -1,6 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
+
+const API_URL = "http://localhost:4008/api/auth"; // Replace with your API base URL
 
 const SignupPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -10,17 +16,19 @@ const SignupPage = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSignup = (e) => {
+  // Handle form submission
+  const handleSignup = async (e) => {
     e.preventDefault();
 
     const { username, email, password, confirmPassword } = formData;
 
-    // Basic validation
+    // Basic client-side validation
     if (!username || !email || !password || !confirmPassword) {
       setError("All fields are required!");
       setSuccess("");
@@ -39,17 +47,35 @@ const SignupPage = () => {
       return;
     }
 
-    setError("");
-    setSuccess("Signup Successful!");
-    console.log("User Signed Up:", formData);
+    try {
+      setError(""); // Clear previous errors
 
-    // Clear form fields
-    setFormData({
-      username: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    });
+      // Send API request
+      const response = await axios.post(`${API_URL}/signup`, {
+        username,
+        email,
+        password,
+      });
+
+      // Handle successful signup
+      setSuccess("Signup Successful!");
+      console.log("User Signed Up:", response.data);
+      navigate("/login");
+
+      // Clear form fields
+      setFormData({
+        username: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      // Handle API errors
+      const errorMessage =
+        err.response?.data?.message || "An error occurred during signup.";
+      setError(errorMessage);
+      setSuccess("");
+    }
   };
 
   return (
