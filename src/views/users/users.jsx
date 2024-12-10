@@ -119,6 +119,7 @@ const UsersPage = () => {
   if (error) return <p>{error}</p>;
 
   return (
+
     <div style={styles.container}>
       <h1 style={styles.header}>Users Management</h1>
       <table style={styles.table}>
@@ -132,40 +133,71 @@ const UsersPage = () => {
             <th style={styles.th}>Actions</th>
           </tr>
         </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id} style={styles.row}>
-              <td style={styles.td}>{user.id}</td>
-              <td style={styles.td}>
-                {editingUser && editingUser.id === user.id ? (
-                  <input
-                    value={editingUser.name}
-                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                    style={styles.input}
-                  />
-                ) : (
-                  user.name
-                )}
-              </td>
-              <td style={styles.td}>{user.age}</td>
-              <td style={styles.td}>{user.gender}</td>
-              <td style={styles.td}>{user.profession}</td>
-              <td style={styles.td}>
-                {editingUser && editingUser.id === user.id ? (
-                  <>
-                    <button onClick={handleSaveEdit} style={styles.saveButton}>Save</button>
-                    <button onClick={() => setEditingUser(null)} style={styles.cancelButton}>Cancel</button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => handleEditUser(user.id)} style={styles.editButton}>Edit</button>
-                    <button onClick={() => handleDeleteUser(user.id)} style={styles.deleteButton}>Delete</button>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
+      <tbody>
+  {users.map((user) => (
+    <tr key={user.id} style={styles.row}>
+      <td style={styles.td}>{user.id}</td>
+      <td style={styles.td}>
+        {editingUser && editingUser.id === user.id ? (
+          <input
+            value={editingUser.name}
+            onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+            style={styles.input}
+          />
+        ) : (
+          user.name
+        )}
+      </td>
+      <td style={styles.td}>
+        {editingUser && editingUser.id === user.id ? (
+          <input
+            value={editingUser.age}
+            onChange={(e) => setEditingUser({ ...editingUser, age: e.target.value })}
+            style={styles.input}
+          />
+        ) : (
+          user.age
+        )}
+      </td>
+      <td style={styles.td}>
+        {editingUser && editingUser.id === user.id ? (
+          <input
+            value={editingUser.gender}
+            onChange={(e) => setEditingUser({ ...editingUser, gender: e.target.value })}
+            style={styles.input}
+          />
+        ) : (
+          user.gender
+        )}
+      </td>
+      <td style={styles.td}>
+        {editingUser && editingUser.id === user.id ? (
+          <input
+            value={editingUser.profession}
+            onChange={(e) => setEditingUser({ ...editingUser, profession: e.target.value })}
+            style={styles.input}
+          />
+        ) : (
+          user.profession
+        )}
+      </td>
+      <td style={styles.td}>
+        {editingUser && editingUser.id === user.id ? (
+          <>
+            <button onClick={handleSaveEdit} style={styles.saveButton}>Save</button>
+            <button onClick={() => setEditingUser(null)} style={styles.cancelButton}>Cancel</button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => handleEditUser(user.id)} style={styles.editButton}>Edit</button>
+            <button onClick={() => handleDeleteUser(user.id)} style={styles.deleteButton}>Delete</button>
+          </>
+        )}
+      </td>
+    </tr>
+  ))}
+</tbody>
+
       </table>
 
       <div style={styles.addUser}>

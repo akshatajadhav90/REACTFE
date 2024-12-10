@@ -81,7 +81,7 @@ const SignupPage = () => {
   return (
     <div style={styles.container}>
       <form onSubmit={handleSignup} style={styles.form}>
-        <h2>Signup</h2>
+        <h2 style = {styles.title}>Signup</h2>
         {error && <p style={styles.error}>{error}</p>}
         {success && <p style={styles.success}>{success}</p>}
         <div style={styles.field}>
@@ -142,6 +142,10 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     height: "100vh",
+    backgroundImage: "url('https://www.pixelstalk.net/wp-content/uploads/2016/08/Nature-wallpapers-Full-HD-backgroud.jpg')", // Replace with your image path
+    backgroundSize: "cover", // Ensures the image covers the entire container
+    backgroundPosition: "center", // Centers the image
+    backgroundRepeat: "no-repeat",
     backgroundColor: "#f0f2f5",
   },
   form: {
@@ -158,6 +162,12 @@ const styles = {
     display: "block",
     marginBottom: "5px",
     fontWeight: "bold",
+  },
+  title: {
+    fontSize: "24px",
+    fontWeight: "bold",
+    textAlign: "center", 
+    margin: 0,
   },
   input: {
     width: "100%",

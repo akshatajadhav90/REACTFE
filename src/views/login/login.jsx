@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const API_URL = "http://localhost:4008/api/auth"; // Replace with your API base URL
+const API_URL = "http://localhost:4008/api/auth"; 
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -52,7 +52,7 @@ const LoginPage = () => {
   return (
     <div style={styles.container}>
       <form onSubmit={handleLogin} style={styles.form}>
-        <h2>Login</h2>
+      <h2 style={styles.title}>Login</h2>
         {error && <p style={styles.error}>{error}</p>}
         <div style={styles.field}>
           <label style={styles.label}>Email:</label>
@@ -92,7 +92,11 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     height: "100vh",
-    backgroundColor: "#f0f2f5",
+    backgroundImage: "url('https://www.pixelstalk.net/wp-content/uploads/2016/09/Best-Beautiful-Images-For-Desktop-Nature.png')", // Replace with your image path
+    backgroundSize: "cover", // Ensures the image covers the entire container
+    backgroundPosition: "center", // Centers the image
+    backgroundRepeat: "no-repeat", // Prevents image repetition
+    backgroundColor: "#f0f2f5", // Fallback color in case the image doesn't load
   },
   form: {
     padding: "20px",
@@ -100,6 +104,7 @@ const styles = {
     backgroundColor: "#fff",
     boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
     width: "300px",
+    opacity: 0.95, // Slight transparency to blend with the background
   },
   field: {
     marginBottom: "15px",
@@ -124,6 +129,12 @@ const styles = {
     color: "#fff",
     fontSize: "16px",
     cursor: "pointer",
+  },
+  title: {
+    fontSize: "24px",
+    fontWeight: "bold",
+    textAlign: "center", 
+    margin: 0,
   },
   error: {
     color: "red",
