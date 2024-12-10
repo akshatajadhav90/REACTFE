@@ -14,6 +14,7 @@ const UsersPage = () => {
   });
   const [isEditResponse, setIsEditResponse] = useState(false);
   const [isAddResponse, setIsAddResponse] = useState(false);
+  const [showAgeErrorPopup, setShowAgeErrorPopup] = useState(false);
 
   const API_URL = "http://localhost:4008/api/users";
 
@@ -53,6 +54,13 @@ const UsersPage = () => {
   const handleAddUser = async () => {
     if (!newUser.name || !newUser.age || !newUser.gender || !newUser.profession)
       return alert("Please fill all fields!");
+
+    // Check if age is a valid integer
+    if (!Number.isInteger(Number(newUser.age))) {
+      setShowAgeErrorPopup(true);
+      return;
+    }
+
     try {
       const token = localStorage.getItem("authToken");
 
@@ -65,6 +73,7 @@ const UsersPage = () => {
 
       setUsers([...users, response.data.users]);
       setNewUser({ name: "", age: "", gender: "", profession: "" });
+      setShowAgeErrorPopup(false);
     } catch (err) {
       setIsAddResponse(false);
 
@@ -124,6 +133,10 @@ const UsersPage = () => {
     }
   };
 
+  const closeAgeErrorPopup = () => {
+    setShowAgeErrorPopup(false);
+  };
+
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
 
@@ -149,10 +162,9 @@ const UsersPage = () => {
               </td>
               <td
                 style={styles.td}
-                title={
-                  editingUser && editingUser.id === user.id
-                    ? editingUser.name
-                    : user.name
+                title={editingUser && editingUser.id === user.id
+                  ? editingUser.name
+                  : user.name
                 }
               >
                 {editingUser && editingUser.id === user.id ? (
@@ -169,18 +181,23 @@ const UsersPage = () => {
               </td>
               <td
                 style={styles.td}
-                title={
-                  editingUser && editingUser.id === user.id
-                    ? editingUser.age
-                    : user.age
+                title={editingUser && editingUser.id === user.id
+                  ? editingUser.age
+                  : user.age
                 }
               >
                 {editingUser && editingUser.id === user.id ? (
                   <input
+                    type="number"
                     value={editingUser.age}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, age: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const age = e.target.value;
+                      if (/^\d+$/.test(age) || age === "") {
+                        setEditingUser({ ...editingUser, age: e.target.value });
+                      } else {
+                        setShowAgeErrorPopup(true);
+                      }
+                    }}
                     style={styles.input}
                   />
                 ) : (
@@ -189,10 +206,9 @@ const UsersPage = () => {
               </td>
               <td
                 style={styles.td}
-                title={
-                  editingUser && editingUser.id === user.id
-                    ? editingUser.gender
-                    : user.gender
+                title={editingUser && editingUser.id === user.id
+                  ? editingUser.gender
+                  : user.gender
                 }
               >
                 {editingUser && editingUser.id === user.id ? (
@@ -209,10 +225,9 @@ const UsersPage = () => {
               </td>
               <td
                 style={styles.td}
-                title={
-                  editingUser && editingUser.id === user.id
-                    ? editingUser.profession
-                    : user.profession
+                title={editingUser && editingUser.id === user.id
+                  ? editingUser.profession
+                  : user.profession
                 }
               >
                 {editingUser && editingUser.id === user.id ? (
@@ -276,7 +291,14 @@ const UsersPage = () => {
         <input
           placeholder="Age"
           value={newUser.age}
-          onChange={(e) => setNewUser({ ...newUser, age: e.target.value })}
+          onChange={(e) => {
+            const age = e.target.value;
+            if (/^\d+$/.test(age) || age === "") {
+              setNewUser({ ...newUser, age });
+            } else {
+              setShowAgeErrorPopup(true);
+            }
+          }}
           style={styles.input}
         />
         <select
@@ -302,6 +324,15 @@ const UsersPage = () => {
           Add User
         </button>
       </div>
+
+      {showAgeErrorPopup && (
+        <div style={styles.popup}>
+          <p>Age must be a valid number.</p>
+          <button onClick={closeAgeErrorPopup} style={styles.popupButton}>
+            Close
+          </button>
+        </div>
+      )}
     </div>
   );
 };
