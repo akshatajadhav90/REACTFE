@@ -18,24 +18,16 @@ const UsersPage = () => {
 
   const API_URL = "http://localhost:4008/api/users";
 
-  // Fetch users from the backend
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-
-        // Retrieve token from localStorage
         const token = localStorage.getItem("authToken");
-
-        if (!token) {
+        if (!token)
           throw new Error("Authorization token is missing. Please log in.");
-        }
 
-        // Make the API call with the token in the headers
         const response = await axios.get(`${API_URL}/getUsers`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         setIsEditResponse(false);
         setIsAddResponse(false);
@@ -50,24 +42,26 @@ const UsersPage = () => {
     fetchUsers();
   }, [isEditResponse, isAddResponse]);
 
-  // Add a new user
   const handleAddUser = async () => {
-    if (!newUser.name || !newUser.age || !newUser.gender || !newUser.profession)
+    if (
+      !newUser.name ||
+      !newUser.age ||
+      !newUser.gender ||
+      !newUser.profession
+    ) {
       return alert("Please fill all fields!");
+    }
 
-    // Check if age is a valid integer
-    if (!Number.isInteger(Number(newUser.age))) {
+    const age = Number(newUser.age);
+    if (!Number.isInteger(age)) {
       setShowAgeErrorPopup(true);
       return;
     }
 
     try {
       const token = localStorage.getItem("authToken");
-
       const response = await axios.post(`${API_URL}/addUsers`, newUser, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setIsAddResponse(true);
 
@@ -76,12 +70,10 @@ const UsersPage = () => {
       setShowAgeErrorPopup(false);
     } catch (err) {
       setIsAddResponse(false);
-
       setError("Failed to add user");
     }
   };
 
-  // Edit a user
   const handleEditUser = (id) => {
     const userToEdit = users.find((user) => user.id === id);
     setEditingUser(userToEdit);
@@ -94,9 +86,7 @@ const UsersPage = () => {
         `${API_URL}/updateUsers/${editingUser.id}`,
         editingUser,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
       setIsEditResponse(true);
@@ -104,7 +94,6 @@ const UsersPage = () => {
       const updatedUsers = users.map((user) =>
         user.id === editingUser.id ? response.data.users : user
       );
-
       setUsers(updatedUsers);
       setEditingUser(null);
     } catch (err) {
@@ -113,7 +102,6 @@ const UsersPage = () => {
     }
   };
 
-  // Delete a user
   const handleDeleteUser = async (id) => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this user?"
@@ -121,11 +109,8 @@ const UsersPage = () => {
     if (!confirmed) return;
     try {
       const token = localStorage.getItem("authToken");
-
       await axios.delete(`${API_URL}/deletUsers/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(users.filter((user) => user.id !== id));
     } catch (err) {
@@ -143,10 +128,18 @@ const UsersPage = () => {
   return (
     <div style={styles.container}>
       <h1 style={styles.header}>Users Management</h1>
+
+      <div className="tableActions">
+        <i
+          className="fas fa-search"
+          onClick={globalSearch}
+          style={{ cursor: "pointer", fontSize: "20px", color: "#007bff" }}
+        ></i>
+      </div>
+
       <table style={styles.table}>
         <thead>
           <tr>
-            <th style={styles.th}>ID</th>
             <th style={styles.th}>Name</th>
             <th style={styles.th}>Age</th>
             <th style={styles.th}>Gender</th>
@@ -157,14 +150,12 @@ const UsersPage = () => {
         <tbody>
           {users.map((user) => (
             <tr key={user.id} style={styles.row}>
-              <td style={styles.td} title={user.id}>
-                {user.id}
-              </td>
               <td
                 style={styles.td}
-                title={editingUser && editingUser.id === user.id
-                  ? editingUser.name
-                  : user.name
+                title={
+                  editingUser && editingUser.id === user.id
+                    ? editingUser.name
+                    : user.name
                 }
               >
                 {editingUser && editingUser.id === user.id ? (
@@ -181,9 +172,10 @@ const UsersPage = () => {
               </td>
               <td
                 style={styles.td}
-                title={editingUser && editingUser.id === user.id
-                  ? editingUser.age
-                  : user.age
+                title={
+                  editingUser && editingUser.id === user.id
+                    ? editingUser.age
+                    : user.age
                 }
               >
                 {editingUser && editingUser.id === user.id ? (
@@ -206,9 +198,10 @@ const UsersPage = () => {
               </td>
               <td
                 style={styles.td}
-                title={editingUser && editingUser.id === user.id
-                  ? editingUser.gender
-                  : user.gender
+                title={
+                  editingUser && editingUser.id === user.id
+                    ? editingUser.gender
+                    : user.gender
                 }
               >
                 {editingUser && editingUser.id === user.id ? (
@@ -225,9 +218,10 @@ const UsersPage = () => {
               </td>
               <td
                 style={styles.td}
-                title={editingUser && editingUser.id === user.id
-                  ? editingUser.profession
-                  : user.profession
+                title={
+                  editingUser && editingUser.id === user.id
+                    ? editingUser.profession
+                    : user.profession
                 }
               >
                 {editingUser && editingUser.id === user.id ? (
@@ -294,24 +288,19 @@ const UsersPage = () => {
           onChange={(e) => {
             const age = e.target.value;
             if (/^\d+$/.test(age) || age === "") {
-              setNewUser({ ...newUser, age });
+              setNewUser({ ...newUser, age: e.target.value });
             } else {
               setShowAgeErrorPopup(true);
             }
           }}
           style={styles.input}
         />
-        <select
+        <input
+          placeholder="Gender"
           value={newUser.gender}
           onChange={(e) => setNewUser({ ...newUser, gender: e.target.value })}
           style={styles.input}
-        >
-          <option value="" disabled>
-            Select Gender
-          </option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-        </select>
+        />
         <input
           placeholder="Profession"
           value={newUser.profession}
@@ -326,9 +315,9 @@ const UsersPage = () => {
       </div>
 
       {showAgeErrorPopup && (
-        <div style={styles.popup}>
-          <p>Age must be a valid number.</p>
-          <button onClick={closeAgeErrorPopup} style={styles.popupButton}>
+        <div style={styles.errorPopup}>
+          <p>Please enter a valid age (positive integer).</p>
+          <button onClick={closeAgeErrorPopup} style={styles.closeButton}>
             Close
           </button>
         </div>
@@ -337,113 +326,91 @@ const UsersPage = () => {
   );
 };
 
-// Styles
 const styles = {
   container: {
     padding: "20px",
-    fontFamily: "'Arial', sans-serif",
-    backgroundColor: "#f8f9fa",
-    minHeight: "100vh",
   },
   header: {
     textAlign: "center",
     marginBottom: "20px",
-    color: "#343a40",
   },
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    marginBottom: "20px",
-    backgroundColor: "#fff",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-    tableLayout: "fixed", // Ensures fixed layout
   },
   th: {
-    backgroundColor: "#007bff",
-    color: "#fff",
-    padding: "10px",
-    textAlign: "left",
-    borderBottom: "1px solid #dee2e6",
-    width: "20%", // Adjust as needed for specific column sizes
-    whiteSpace: "nowrap", // Prevents content from wrapping
-    overflow: "hidden", // Hides overflow content
-    textOverflow: "ellipsis", // Shows ellipsis for overflowing content
+    border: "1px solid #ddd",
+    padding: "8px",
+  },
+  row: {
+    borderBottom: "1px solid #ddd",
   },
   td: {
-    padding: "10px",
-    borderBottom: "1px solid #dee2e6",
-    width: "20%", // Matches the column width from <th>
-    whiteSpace: "nowrap", // Prevents content from wrapping
-    overflow: "hidden", // Hides overflow content
-    textOverflow: "ellipsis", // Shows ellipsis for overflowing content
+    padding: "8px",
   },
-
-  row: {
-    ":hover": {
-      backgroundColor: "#fff9c4",
-    },
-  },
-  editButton: {
-    backgroundColor: "#17a2b8",
-    color: "#fff",
-    border: "none",
-    padding: "6px 12px",
-    borderRadius: "4px",
-    cursor: "pointer",
-    marginRight: "5px",
-  },
-  deleteButton: {
-    backgroundColor: "#dc3545",
-    color: "#fff",
-    border: "none",
-    padding: "6px 12px",
-    borderRadius: "4px",
-    cursor: "pointer",
+  input: {
+    width: "100%",
+    padding: "5px",
+    margin: "5px 0",
+    boxSizing: "border-box",
   },
   saveButton: {
-    backgroundColor: "#28a745",
-    color: "#fff",
+    backgroundColor: "#4CAF50",
+    color: "white",
     border: "none",
-    padding: "6px 12px",
-    borderRadius: "4px",
+    padding: "5px 10px",
     cursor: "pointer",
-    marginRight: "5px",
   },
   cancelButton: {
-    backgroundColor: "#ffc107",
-    color: "#fff",
+    backgroundColor: "#f44336",
+    color: "white",
     border: "none",
-    padding: "6px 12px",
-    borderRadius: "4px",
+    padding: "5px 10px",
+    cursor: "pointer",
+  },
+  editButton: {
+    backgroundColor: "#007bff",
+    color: "white",
+    border: "none",
+    padding: "5px 10px",
+    cursor: "pointer",
+  },
+  deleteButton: {
+    backgroundColor: "#f44336",
+    color: "white",
+    border: "none",
+    padding: "5px 10px",
     cursor: "pointer",
   },
   addUser: {
-    textAlign: "center",
-    backgroundColor: "#fff",
-    padding: "20px",
-    borderRadius: "8px",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    marginTop: "20px",
   },
   addUserHeader: {
     marginBottom: "10px",
-    color: "#343a40",
   },
   addButton: {
-    backgroundColor: "#007bff",
-    color: "#fff",
+    backgroundColor: "#4CAF50",
+    color: "white",
     border: "none",
-    padding: "10px 20px",
-    borderRadius: "4px",
+    padding: "5px 10px",
     cursor: "pointer",
-    marginTop: "10px",
-    marginLeft: "10px",
   },
-  input: {
-    padding: "8px",
-    width: "100%", // Adjust width for inputs
-    margin: "5px 0",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
+  errorPopup: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    backgroundColor: "white",
+    padding: "20px",
+    boxShadow: "0 0 15px rgba(0, 0, 0, 0.5)",
+    zIndex: 1000,
+  },
+  closeButton: {
+    backgroundColor: "#f44336",
+    color: "white",
+    border: "none",
+    padding: "5px 10px",
+    cursor: "pointer",
   },
 };
 
