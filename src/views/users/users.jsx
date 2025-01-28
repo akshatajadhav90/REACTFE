@@ -6,8 +6,15 @@ const UsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filteredUsers, setFilteredUsers] = useState([]); // Filtered user data
+  console.log("hjgyg", filteredUsers);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingUser, setEditingUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [data, setData] = useState([]);
+
+  const [page, setPage] = useState(1); // Default page is 1
+
+  const limit = 5;
   const [newUser, setNewUser] = useState({
     name: "",
     age: "",
@@ -22,6 +29,8 @@ const UsersPage = () => {
 
   useEffect(() => {
     const fetchUsers = async () => {
+      console.log("page------------", page)
+      console.log("limit--------------", limit)
       try {
         setLoading(true);
         const token = localStorage.getItem("authToken");
@@ -30,6 +39,7 @@ const UsersPage = () => {
 
         const response = await axios.get(`${API_URL}/getUsers`, {
           headers: { Authorization: `Bearer ${token}` },
+          // params: { page: page, limit: limit}
         });
         setIsEditResponse(false);
         setIsAddResponse(false);
@@ -43,7 +53,7 @@ const UsersPage = () => {
     };
 
     fetchUsers();
-  }, [isEditResponse, isAddResponse]);
+  }, [isEditResponse, isAddResponse,page, limit]);
 
   const handleAddUser = async () => {
     if (
@@ -69,6 +79,7 @@ const UsersPage = () => {
       setIsAddResponse(true);
 
       setUsers([...users, response.data.users]);
+      setFilteredUsers([...users, response.data.users]);
       setNewUser({ name: "", age: "", gender: "", profession: "" });
       setShowAgeErrorPopup(false);
     } catch (err) {
@@ -157,6 +168,45 @@ const UsersPage = () => {
     setShowAgeErrorPopup(false);
   };
 
+  // Pagination logic
+  const totalItems = filteredUsers.length;
+  const totalPages = Math.ceil(totalItems / limit);
+  const startIndex = (currentPage - 1) * limit;
+  const endIndex = startIndex + limit;
+  const currentData = filteredUsers.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+
+  // const handleNext = () => {
+  //   if (page < totalPages) {
+  //     setPage(prevPage => prevPage + 1);
+  //   }
+  // };
+
+  // const handlePrev = () => {
+  //   if (page > 1) {
+  //     setPage(prevPage => prevPage - 1);
+  //   }
+  // };
+
+
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
 
@@ -174,7 +224,13 @@ const UsersPage = () => {
           placeholder="Search by any column..."
           value={searchQuery}
           onChange={handleSearchChange}
-          style={{ fontSize: "16px", padding: "5px", margin: "10px 0", float: "right", border: "2px solid #555"}}
+          style={{
+            fontSize: "16px",
+            padding: "5px",
+            margin: "10px 0",
+            float: "right",
+            border: "2px solid #555",
+          }}
         />
       </div>
 
@@ -220,7 +276,7 @@ const UsersPage = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredUsers.map((user) => (
+          {currentData.map((user) => (
             <tr key={user.id} style={styles.row}>
               <td style={styles.td}>
                 {editingUser && editingUser.id === user.id ? (
@@ -313,6 +369,40 @@ const UsersPage = () => {
         </tbody>
       </table>
 
+      {/* Pagination Controls */}
+      <div style={{ marginTop: "20px", textAlign: "center" }}>
+        <button
+          onClick={handlePreviousPage}
+          disabled={currentPage === 1}
+          style={{
+            padding: "5px 10px",
+            marginRight: "5px",
+             backgroundColor: "#b2dff7",
+            cursor: currentPage === 1 ? "not-allowed" : "pointer",
+          }}
+        >
+          Previous
+        </button>
+        <span>
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          onClick={handleNextPage}
+          disabled={currentPage === totalPages}
+          style={{
+            padding: "5px 10px",
+            marginLeft: "5px",
+             backgroundColor: "#b2dff7",
+            cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+          }}
+        >
+          Next
+        </button>
+      </div>
+
+
+
+
       <div style={styles.addUser}>
         <h3 style={styles.addUserHeader}>Add New User</h3>
         <input
@@ -356,7 +446,7 @@ const styles = {
   header: {
     textAlign: "center",
     marginBottom: "20px",
-    color: "#4CAF50",
+    color: "#1c1c1c",
   },
   table: {
     width: "100%",
@@ -367,7 +457,7 @@ const styles = {
     border: "1px solid #999",
     padding: "8px",
     borderRight: "1px solid #999",
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#f8e1f2",
   },
   row: {
     borderBottom: "1px solid #ddd",
