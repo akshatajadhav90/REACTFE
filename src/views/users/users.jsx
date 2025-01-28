@@ -5,6 +5,8 @@ const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filteredUsers, setFilteredUsers] = useState([]); // Filtered user data
+  const [searchQuery, setSearchQuery] = useState("");
   const [editingUser, setEditingUser] = useState(null);
   const [newUser, setNewUser] = useState({
     name: "",
@@ -14,7 +16,7 @@ const UsersPage = () => {
   });
   const [isEditResponse, setIsEditResponse] = useState(false);
   const [isAddResponse, setIsAddResponse] = useState(false);
-  const [showAgeErrorPopup, setShowAgeErrorPopup] = useState(false);
+  const [setShowAgeErrorPopup] = useState(false);
 
   const API_URL = "http://localhost:4008/api/users";
 
@@ -32,6 +34,7 @@ const UsersPage = () => {
         setIsEditResponse(false);
         setIsAddResponse(false);
         setUsers(response.data.users);
+        setFilteredUsers(response.data.users);
       } catch (error) {
         setError("Failed to fetch users. " + error.message);
       } finally {
@@ -72,6 +75,38 @@ const UsersPage = () => {
       setIsAddResponse(false);
       setError("Failed to add user");
     }
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    // Filter users by matching search query on any column
+    const lowercasedQuery = value.toLowerCase();
+    const filtered = users.filter((user) =>
+      Object.values(user).join(" ").toLowerCase().includes(lowercasedQuery)
+    );
+    setFilteredUsers(filtered);
+  };
+
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
+
+  const sortData = (key) => {
+    const direction = sortConfig.direction === "asc" ? "desc" : "asc";
+    setSortConfig({ key, direction });
+
+    const sortedUsers = [...users].sort((a, b) => {
+      if (a[key] < b[key]) return sortConfig.direction === "asc" ? -1 : 1;
+      if (a[key] > b[key]) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    setFilteredUsers(sortedUsers);
+
+    return sortedUsers;
   };
 
   const handleEditUser = (id) => {
@@ -132,32 +167,62 @@ const UsersPage = () => {
       <div className="tableActions">
         <i
           className="fas fa-search"
-          onClick={globalSearch}
           style={{ cursor: "pointer", fontSize: "20px", color: "#007bff" }}
         ></i>
+        <input
+          type="text"
+          placeholder="Search by any column..."
+          value={searchQuery}
+          onChange={handleSearchChange}
+          style={{ fontSize: "16px", padding: "5px", margin: "10px 0", float: "right", border: "2px solid #555"}}
+        />
       </div>
 
       <table style={styles.table}>
         <thead>
           <tr>
-            <th style={styles.th}>Name</th>
-            <th style={styles.th}>Age</th>
-            <th style={styles.th}>Gender</th>
-            <th style={styles.th}>Profession</th>
+            <th style={styles.th} onClick={() => setUsers(sortData("name"))}>
+              Name{" "}
+              {sortConfig.key === "name"
+                ? sortConfig.direction === "asc"
+                  ? "↑"
+                  : "↓"
+                : ""}
+            </th>
+            <th style={styles.th} onClick={() => setUsers(sortData("age"))}>
+              Age{" "}
+              {sortConfig.key === "age"
+                ? sortConfig.direction === "asc"
+                  ? "↑"
+                  : "↓"
+                : ""}
+            </th>
+            <th style={styles.th} onClick={() => setUsers(sortData("gender"))}>
+              Gender{" "}
+              {sortConfig.key === "gender"
+                ? sortConfig.direction === "asc"
+                  ? "↑"
+                  : "↓"
+                : ""}
+            </th>
+            <th
+              style={styles.th}
+              onClick={() => setUsers(sortData("profession"))}
+            >
+              Profession{" "}
+              {sortConfig.key === "profession"
+                ? sortConfig.direction === "asc"
+                  ? "↑"
+                  : "↓"
+                : ""}
+            </th>
             <th style={styles.th}>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
+          {filteredUsers.map((user) => (
             <tr key={user.id} style={styles.row}>
-              <td
-                style={styles.td}
-                title={
-                  editingUser && editingUser.id === user.id
-                    ? editingUser.name
-                    : user.name
-                }
-              >
+              <td style={styles.td}>
                 {editingUser && editingUser.id === user.id ? (
                   <input
                     value={editingUser.name}
@@ -170,40 +235,21 @@ const UsersPage = () => {
                   user.name
                 )}
               </td>
-              <td
-                style={styles.td}
-                title={
-                  editingUser && editingUser.id === user.id
-                    ? editingUser.age
-                    : user.age
-                }
-              >
+              <td style={styles.td}>
                 {editingUser && editingUser.id === user.id ? (
                   <input
                     type="number"
                     value={editingUser.age}
-                    onChange={(e) => {
-                      const age = e.target.value;
-                      if (/^\d+$/.test(age) || age === "") {
-                        setEditingUser({ ...editingUser, age: e.target.value });
-                      } else {
-                        setShowAgeErrorPopup(true);
-                      }
-                    }}
+                    onChange={(e) =>
+                      setEditingUser({ ...editingUser, age: e.target.value })
+                    }
                     style={styles.input}
                   />
                 ) : (
                   user.age
                 )}
               </td>
-              <td
-                style={styles.td}
-                title={
-                  editingUser && editingUser.id === user.id
-                    ? editingUser.gender
-                    : user.gender
-                }
-              >
+              <td style={styles.td}>
                 {editingUser && editingUser.id === user.id ? (
                   <input
                     value={editingUser.gender}
@@ -216,14 +262,7 @@ const UsersPage = () => {
                   user.gender
                 )}
               </td>
-              <td
-                style={styles.td}
-                title={
-                  editingUser && editingUser.id === user.id
-                    ? editingUser.profession
-                    : user.profession
-                }
-              >
+              <td style={styles.td}>
                 {editingUser && editingUser.id === user.id ? (
                   <input
                     value={editingUser.profession}
@@ -285,14 +324,7 @@ const UsersPage = () => {
         <input
           placeholder="Age"
           value={newUser.age}
-          onChange={(e) => {
-            const age = e.target.value;
-            if (/^\d+$/.test(age) || age === "") {
-              setNewUser({ ...newUser, age: e.target.value });
-            } else {
-              setShowAgeErrorPopup(true);
-            }
-          }}
+          onChange={(e) => setNewUser({ ...newUser, age: e.target.value })}
           style={styles.input}
         />
         <input
@@ -313,15 +345,6 @@ const UsersPage = () => {
           Add User
         </button>
       </div>
-
-      {showAgeErrorPopup && (
-        <div style={styles.errorPopup}>
-          <p>Please enter a valid age (positive integer).</p>
-          <button onClick={closeAgeErrorPopup} style={styles.closeButton}>
-            Close
-          </button>
-        </div>
-      )}
     </div>
   );
 };
@@ -333,20 +356,25 @@ const styles = {
   header: {
     textAlign: "center",
     marginBottom: "20px",
+    color: "#4CAF50",
   },
   table: {
     width: "100%",
     borderCollapse: "collapse",
+    border: "2px solid #999",
   },
   th: {
-    border: "1px solid #ddd",
+    border: "1px solid #999",
     padding: "8px",
+    borderRight: "1px solid #999",
+    backgroundColor: "#f2f2f2",
   },
   row: {
     borderBottom: "1px solid #ddd",
   },
   td: {
     padding: "8px",
+    border: "1px solid #999",
   },
   input: {
     width: "100%",
@@ -374,6 +402,7 @@ const styles = {
     border: "none",
     padding: "5px 10px",
     cursor: "pointer",
+    marginLeft: "100px",
   },
   deleteButton: {
     backgroundColor: "#f44336",
@@ -381,6 +410,7 @@ const styles = {
     border: "none",
     padding: "5px 10px",
     cursor: "pointer",
+    marginLeft: "70px",
   },
   addUser: {
     marginTop: "20px",
