@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [getApi, setGetApi] = useState(true);
   const [error, setError] = useState(null);
-  const [filteredUsers, setFilteredUsers] = useState([]); // Filtered user data
-  console.log("hjgyg", filteredUsers);
+  const [filteredUsers, setFilteredUsers] = useState([]); 
   const [searchQuery, setSearchQuery] = useState("");
   const [editingUser, setEditingUser] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [data, setData] = useState([]);
-
-  const [page, setPage] = useState(1); // Default page is 1
-
+  const [page, setPage] = useState(1); 
+  const [totalUsers, setTotalUsers] = useState(0); 
   const limit = 5;
   const [newUser, setNewUser] = useState({
     name: "",
@@ -28,32 +29,34 @@ const UsersPage = () => {
   const API_URL = "http://localhost:4008/api/users";
 
   useEffect(() => {
+    if (!getApi) return; // Prevent unnecessary API calls
+  
     const fetchUsers = async () => {
-      console.log("page------------", page)
-      console.log("limit--------------", limit)
       try {
         setLoading(true);
         const token = localStorage.getItem("authToken");
-        if (!token)
-          throw new Error("Authorization token is missing. Please log in.");
-
+        if (!token) throw new Error("Authorization token is missing.");
+        
         const response = await axios.get(`${API_URL}/getUsers`, {
           headers: { Authorization: `Bearer ${token}` },
-          // params: { page: page, limit: limit}
+          params: { page, limit },
         });
-        setIsEditResponse(false);
-        setIsAddResponse(false);
+  
+        setTotalUsers(response.data.totalUsers);
         setUsers(response.data.users);
         setFilteredUsers(response.data.users);
+        setIsEditResponse(false);
+        setIsAddResponse(false);
+        setGetApi(false);
       } catch (error) {
-        setError("Failed to fetch users. " + error.message);
+        setError("Failed to fetch users: " + error.message);
       } finally {
         setLoading(false);
       }
     };
-
     fetchUsers();
-  }, [isEditResponse, isAddResponse,page, limit]);
+  }, [isEditResponse, isAddResponse, page, limit]);
+  
 
   const handleAddUser = async () => {
     if (
@@ -77,7 +80,6 @@ const UsersPage = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setIsAddResponse(true);
-
       setUsers([...users, response.data.users]);
       setFilteredUsers([...users, response.data.users]);
       setNewUser({ name: "", age: "", gender: "", profession: "" });
@@ -106,18 +108,15 @@ const UsersPage = () => {
   });
 
   const sortData = (key) => {
-    const direction = sortConfig.direction === "asc" ? "desc" : "asc";
+    const direction = sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc";
     setSortConfig({ key, direction });
-
-    const sortedUsers = [...users].sort((a, b) => {
-      if (a[key] < b[key]) return sortConfig.direction === "asc" ? -1 : 1;
-      if (a[key] > b[key]) return sortConfig.direction === "asc" ? 1 : -1;
+  
+    const sortedUsers = [...filteredUsers].sort((a, b) => {
+      if (a[key] < b[key]) return direction === "asc" ? -1 : 1;
+      if (a[key] > b[key]) return direction === "asc" ? 1 : -1;
       return 0;
     });
-
     setFilteredUsers(sortedUsers);
-
-    return sortedUsers;
   };
 
   const handleEditUser = (id) => {
@@ -136,29 +135,30 @@ const UsersPage = () => {
         }
       );
       setIsEditResponse(true);
-
+  
       const updatedUsers = users.map((user) =>
         user.id === editingUser.id ? response.data.users : user
       );
       setUsers(updatedUsers);
+      setFilteredUsers(updatedUsers);
       setEditingUser(null);
     } catch (err) {
       setIsEditResponse(false);
       setError("Failed to update user");
     }
   };
-
+  
   const handleDeleteUser = async (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this user?"
-    );
-    if (!confirmed) return;
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
       const token = localStorage.getItem("authToken");
-      await axios.delete(`${API_URL}/deletUsers/${id}`, {
+      await axios.delete(`${API_URL}/deleteUsers/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUsers(users.filter((user) => user.id !== id));
+  
+      const updatedUsers = users.filter((user) => user.id !== id);
+      setUsers(updatedUsers);
+      setFilteredUsers(updatedUsers);
     } catch (err) {
       setError("Failed to delete user");
     }
@@ -169,8 +169,7 @@ const UsersPage = () => {
   };
 
   // Pagination logic
-  const totalItems = filteredUsers.length;
-  const totalPages = Math.ceil(totalItems / limit);
+  const totalPages = Math.ceil(totalUsers / limit);
   const startIndex = (currentPage - 1) * limit;
   const endIndex = startIndex + limit;
   const currentData = filteredUsers.slice(startIndex, endIndex);
@@ -181,32 +180,20 @@ const UsersPage = () => {
     }
   };
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+  const handleNext = () => {
+    if (page < totalPages) {
+      setPage(page + 1);
+      setGetApi(true); // Trigger API call on page change
     }
   };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+  
+  const handlePrev = () => {
+    if (page > 1) {
+      setPage(page - 1);
+      setGetApi(true); // Trigger API call on page change
     }
   };
-
-
-  // const handleNext = () => {
-  //   if (page < totalPages) {
-  //     setPage(prevPage => prevPage + 1);
-  //   }
-  // };
-
-  // const handlePrev = () => {
-  //   if (page > 1) {
-  //     setPage(prevPage => prevPage - 1);
-  //   }
-  // };
-
-
+  
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
 
@@ -370,33 +357,20 @@ const UsersPage = () => {
       </table>
 
       {/* Pagination Controls */}
-      <div style={{ marginTop: "20px", textAlign: "center" }}>
-        <button
-          onClick={handlePreviousPage}
-          disabled={currentPage === 1}
-          style={{
-            padding: "5px 10px",
-            marginRight: "5px",
-             backgroundColor: "#b2dff7",
-            cursor: currentPage === 1 ? "not-allowed" : "pointer",
-          }}
-        >
-          Previous
+      <div  style = {styles.paginationButton}>
+        <button onClick={handlePrev} style={{
+           backgroundColor: "#479f76"
+          }} 
+          disabled={page === 1}>
+          <FontAwesomeIcon icon={faArrowLeft} />
         </button>
-        <span>
-          Page {currentPage} of {totalPages}
-        </span>
-        <button
-          onClick={handleNextPage}
-          disabled={currentPage === totalPages}
-          style={{
-            padding: "5px 10px",
-            marginLeft: "5px",
-             backgroundColor: "#b2dff7",
-            cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-          }}
-        >
-          Next
+        <span> {page} of {totalPages} </span>
+        <button onClick={handleNext}
+        style={{
+          backgroundColor: "#479f76"
+         }}
+         disabled={page === totalPages}>
+          <FontAwesomeIcon icon={faArrowRight} />
         </button>
       </div>
 
@@ -446,7 +420,7 @@ const styles = {
   header: {
     textAlign: "center",
     marginBottom: "20px",
-    color: "#1c1c1c",
+    color: "#160d27",
   },
   table: {
     width: "100%",
@@ -456,8 +430,8 @@ const styles = {
   th: {
     border: "1px solid #999",
     padding: "8px",
-    borderRight: "1px solid #999",
-    backgroundColor: "#f8e1f2",
+    borderRight: "1px solid #000",
+    backgroundColor: "#479f76",
   },
   row: {
     borderBottom: "1px solid #ddd",
@@ -502,6 +476,12 @@ const styles = {
     cursor: "pointer",
     marginLeft: "70px",
   },
+
+  paginationButton :{
+    float: "right",
+    marginTop : "15px"
+  },
+
   addUser: {
     marginTop: "20px",
   },
