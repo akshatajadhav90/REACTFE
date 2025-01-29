@@ -2,19 +2,21 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { ClipLoader } from "react-spinners";
 
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  console.log("loading", loading);
   const [getApi, setGetApi] = useState(true);
   const [error, setError] = useState(null);
-  const [filteredUsers, setFilteredUsers] = useState([]); 
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingUser, setEditingUser] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [page, setPage] = useState(1); 
-  const [totalUsers, setTotalUsers] = useState(0); 
+  const [page, setPage] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
   const limit = 5;
   const [newUser, setNewUser] = useState({
     name: "",
@@ -24,24 +26,25 @@ const UsersPage = () => {
   });
   const [isEditResponse, setIsEditResponse] = useState(false);
   const [isAddResponse, setIsAddResponse] = useState(false);
-  const [setShowAgeErrorPopup] = useState(false);
+  const [showAgeErrorPopup, setShowAgeErrorPopup] = useState(false);
 
   const API_URL = "http://localhost:4008/api/users";
 
   useEffect(() => {
     if (!getApi) return; // Prevent unnecessary API calls
-  
+
     const fetchUsers = async () => {
       try {
-        setLoading(true);
+        console.log("searchQuery inside fetchUsers--------------", searchQuery);
+        // setLoading(true);
         const token = localStorage.getItem("authToken");
         if (!token) throw new Error("Authorization token is missing.");
-        
+
         const response = await axios.get(`${API_URL}/getUsers`, {
           headers: { Authorization: `Bearer ${token}` },
-          params: { page, limit },
+          params: { page, limit, search: searchQuery },
         });
-  
+
         setTotalUsers(response.data.totalUsers);
         setUsers(response.data.users);
         setFilteredUsers(response.data.users);
@@ -55,8 +58,7 @@ const UsersPage = () => {
       }
     };
     fetchUsers();
-  }, [isEditResponse, isAddResponse, page, limit]);
-  
+  }, [isEditResponse, isAddResponse, page, limit, searchQuery]);
 
   const handleAddUser = async () => {
     if (
@@ -93,13 +95,7 @@ const UsersPage = () => {
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
-
-    // Filter users by matching search query on any column
-    const lowercasedQuery = value.toLowerCase();
-    const filtered = users.filter((user) =>
-      Object.values(user).join(" ").toLowerCase().includes(lowercasedQuery)
-    );
-    setFilteredUsers(filtered);
+    setGetApi(value.toLowerCase()); // This will trigger `useEffect` and call API
   };
 
   const [sortConfig, setSortConfig] = useState({
@@ -108,9 +104,10 @@ const UsersPage = () => {
   });
 
   const sortData = (key) => {
-    const direction = sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc";
+    const direction =
+      sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc";
     setSortConfig({ key, direction });
-  
+
     const sortedUsers = [...filteredUsers].sort((a, b) => {
       if (a[key] < b[key]) return direction === "asc" ? -1 : 1;
       if (a[key] > b[key]) return direction === "asc" ? 1 : -1;
@@ -135,7 +132,7 @@ const UsersPage = () => {
         }
       );
       setIsEditResponse(true);
-  
+
       const updatedUsers = users.map((user) =>
         user.id === editingUser.id ? response.data.users : user
       );
@@ -147,7 +144,7 @@ const UsersPage = () => {
       setError("Failed to update user");
     }
   };
-  
+
   const handleDeleteUser = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
@@ -155,7 +152,7 @@ const UsersPage = () => {
       await axios.delete(`${API_URL}/deleteUsers/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
+
       const updatedUsers = users.filter((user) => user.id !== id);
       setUsers(updatedUsers);
       setFilteredUsers(updatedUsers);
@@ -172,7 +169,7 @@ const UsersPage = () => {
   const totalPages = Math.ceil(totalUsers / limit);
   const startIndex = (currentPage - 1) * limit;
   const endIndex = startIndex + limit;
-  const currentData = filteredUsers.slice(startIndex, endIndex);
+  const currentData = filteredUsers?.slice(startIndex, endIndex);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -186,15 +183,17 @@ const UsersPage = () => {
       setGetApi(true); // Trigger API call on page change
     }
   };
-  
+
   const handlePrev = () => {
     if (page > 1) {
       setPage(page - 1);
       setGetApi(true); // Trigger API call on page change
     }
   };
-  
+
   if (loading) return <p>Loading...</p>;
+  // if (loading) return <ClipLoader color="#3498db" size={40} />;
+
   if (error) return <p>{error}</p>;
 
   return (
@@ -263,7 +262,7 @@ const UsersPage = () => {
           </tr>
         </thead>
         <tbody>
-          {currentData.map((user) => (
+          {currentData?.map((user) => (
             <tr key={user.id} style={styles.row}>
               <td style={styles.td}>
                 {editingUser && editingUser.id === user.id ? (
@@ -356,26 +355,38 @@ const UsersPage = () => {
         </tbody>
       </table>
 
+      {/* Popup message */}
+      <div style={{ textAlign: "center", marginTop: "50px" }}>
+        {showAgeErrorPopup && (
+          <div style={styles.popup}> Please enter a valid age! </div>
+        )}
+      </div>
+
       {/* Pagination Controls */}
-      <div  style = {styles.paginationButton}>
-        <button onClick={handlePrev} style={{
-           backgroundColor: "#479f76"
-          }} 
-          disabled={page === 1}>
+      <div style={styles.paginationButton}>
+        <button
+          onClick={handlePrev}
+          style={{
+            backgroundColor: "#479f76",
+          }}
+          disabled={page === 1}
+        >
           <FontAwesomeIcon icon={faArrowLeft} />
         </button>
-        <span> {page} of {totalPages} </span>
-        <button onClick={handleNext}
-        style={{
-          backgroundColor: "#479f76"
-         }}
-         disabled={page === totalPages}>
+        <span>
+          {" "}
+          {page} of {totalPages}{" "}
+        </span>
+        <button
+          onClick={handleNext}
+          style={{
+            backgroundColor: "#479f76",
+          }}
+          disabled={page === totalPages}
+        >
           <FontAwesomeIcon icon={faArrowRight} />
         </button>
       </div>
-
-
-
 
       <div style={styles.addUser}>
         <h3 style={styles.addUserHeader}>Add New User</h3>
@@ -477,9 +488,9 @@ const styles = {
     marginLeft: "70px",
   },
 
-  paginationButton :{
+  paginationButton: {
     float: "right",
-    marginTop : "15px"
+    marginTop: "15px",
   },
 
   addUser: {
@@ -511,6 +522,20 @@ const styles = {
     border: "none",
     padding: "5px 10px",
     cursor: "pointer",
+  },
+  popup: {
+    position: "fixed",
+    top: "10px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    backgroundColor: "#ff4d4d",
+    color: "white",
+    padding: "10px 20px",
+    borderRadius: "5px",
+    boxShadow: "0px 4px 6px rgba(0,0,0,0.2)",
+    fontSize: "16px",
+    fontWeight: "bold",
+    zIndex: 1000,
   },
 };
 
