@@ -27,6 +27,10 @@ const UsersPage = () => {
   const [isEditResponse, setIsEditResponse] = useState(false);
   const [isAddResponse, setIsAddResponse] = useState(false);
   const [showAgeErrorPopup, setShowAgeErrorPopup] = useState(false);
+  const [sortConfig, setSortConfig] = useState({
+    sortBy: null,
+    sortOrder: "asc",
+  });
 
   const API_URL = "http://localhost:4008/api/users";
 
@@ -36,13 +40,15 @@ const UsersPage = () => {
     const fetchUsers = async () => {
       try {
         console.log("searchQuery inside fetchUsers--------------", searchQuery);
+
+        console.log("sortConfig in useEffect----------",sortConfig)
         // setLoading(true);
         const token = localStorage.getItem("authToken");
         if (!token) throw new Error("Authorization token is missing.");
 
         const response = await axios.get(`${API_URL}/getUsers`, {
           headers: { Authorization: `Bearer ${token}` },
-          params: { page, limit, search: searchQuery },
+          params: { page, limit, search: searchQuery, sortBy: sortConfig.sortBy, sortOrder: sortConfig.sortOrder },
         });
 
         setTotalUsers(response.data.totalUsers);
@@ -58,7 +64,7 @@ const UsersPage = () => {
       }
     };
     fetchUsers();
-  }, [isEditResponse, isAddResponse, page, limit, searchQuery]);
+  }, [isEditResponse, isAddResponse, page, limit, searchQuery, sortConfig]);
 
   const handleAddUser = async () => {
     if (
@@ -98,22 +104,16 @@ const UsersPage = () => {
     setGetApi(value.toLowerCase()); // This will trigger `useEffect` and call API
   };
 
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc",
-  });
+ 
 
-  const sortData = (key) => {
-    const direction =
-      sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc";
-    setSortConfig({ key, direction });
-
-    const sortedUsers = [...filteredUsers].sort((a, b) => {
-      if (a[key] < b[key]) return direction === "asc" ? -1 : 1;
-      if (a[key] > b[key]) return direction === "asc" ? 1 : -1;
-      return 0;
-    });
-    setFilteredUsers(sortedUsers);
+  const sortData = (sortBy) => {
+    console.log("sortBy===========", sortBy)
+    const sortOrder =
+      sortConfig.sortBy === sortBy && sortConfig.sortOrder === "asc" ? "desc" : "asc";
+      
+    setSortConfig({ sortBy, sortOrder });
+    console.log("sortConfigs-------------", sortConfig)
+    setGetApi(sortConfig); // This will trigger `useEffect` and call API
   };
 
   const handleEditUser = (id) => {
@@ -225,26 +225,26 @@ const UsersPage = () => {
           <tr>
             <th style={styles.th} onClick={() => setUsers(sortData("name"))}>
               Name{" "}
-              {sortConfig.key === "name"
-                ? sortConfig.direction === "asc"
-                  ? "↑"
-                  : "↓"
+              {sortConfig.sortBy === "name"
+                ? sortConfig.sortOrder === "asc"
+                  ? "↑↑"
+                  : "↓↓"
                 : ""}
             </th>
             <th style={styles.th} onClick={() => setUsers(sortData("age"))}>
               Age{" "}
-              {sortConfig.key === "age"
-                ? sortConfig.direction === "asc"
-                  ? "↑"
-                  : "↓"
+              {sortConfig.sortBy === "age"
+                ? sortConfig.sortOrder === "asc"
+                  ? "↑↑"
+                  : "↓↓"
                 : ""}
             </th>
             <th style={styles.th} onClick={() => setUsers(sortData("gender"))}>
               Gender{" "}
-              {sortConfig.key === "gender"
-                ? sortConfig.direction === "asc"
-                  ? "↑"
-                  : "↓"
+              {sortConfig.sortBy === "gender"
+                ? sortConfig.sortOrder === "asc"
+                  ? "↑↑"
+                  : "↓↓"
                 : ""}
             </th>
             <th
@@ -252,10 +252,10 @@ const UsersPage = () => {
               onClick={() => setUsers(sortData("profession"))}
             >
               Profession{" "}
-              {sortConfig.key === "profession"
-                ? sortConfig.direction === "asc"
-                  ? "↑"
-                  : "↓"
+              {sortConfig.sortBy === "profession"
+                ? sortConfig.sortOrder === "asc"
+                  ? "↑↑"
+                  : "↓↓"
                 : ""}
             </th>
             <th style={styles.th}>Actions</th>
