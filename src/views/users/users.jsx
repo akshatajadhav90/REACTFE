@@ -8,7 +8,6 @@ import { ClipLoader } from "react-spinners";
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  console.log("loading", loading);
   const [getApi, setGetApi] = useState(true);
   const [error, setError] = useState(null);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -17,7 +16,10 @@ const UsersPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [page, setPage] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
-  const limit = 5;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(null);
+
+  const limit = 10;
   const [newUser, setNewUser] = useState({
     name: "",
     age: "",
@@ -29,7 +31,7 @@ const UsersPage = () => {
   const [showAgeErrorPopup, setShowAgeErrorPopup] = useState(false);
   const [sortConfig, setSortConfig] = useState({
     sortBy: null,
-    sortOrder: "asc",
+    sortOrder: null,
   });
 
   const API_URL = "http://localhost:4008/api/users";
@@ -39,16 +41,19 @@ const UsersPage = () => {
 
     const fetchUsers = async () => {
       try {
-        console.log("searchQuery inside fetchUsers--------------", searchQuery);
-
-        console.log("sortConfig in useEffect----------",sortConfig)
         // setLoading(true);
         const token = localStorage.getItem("authToken");
         if (!token) throw new Error("Authorization token is missing.");
 
         const response = await axios.get(`${API_URL}/getUsers`, {
           headers: { Authorization: `Bearer ${token}` },
-          params: { page, limit, search: searchQuery, sortBy: sortConfig.sortBy, sortOrder: sortConfig.sortOrder },
+          params: {
+            page,
+            limit,
+            search: searchQuery,
+            sortBy: sortConfig.sortBy,
+            sortOrder: sortConfig.sortOrder,
+          },
         });
 
         setTotalUsers(response.data.totalUsers);
@@ -57,6 +62,10 @@ const UsersPage = () => {
         setIsEditResponse(false);
         setIsAddResponse(false);
         setGetApi(false);
+
+        if (response?.data?.totalUsers === 0) {
+          alert("No matching users found!");
+        }
       } catch (error) {
         setError("Failed to fetch users: " + error.message);
       } finally {
@@ -92,6 +101,8 @@ const UsersPage = () => {
       setFilteredUsers([...users, response.data.users]);
       setNewUser({ name: "", age: "", gender: "", profession: "" });
       setShowAgeErrorPopup(false);
+      setIsModalOpen(false);
+      setGetApi(true);
     } catch (err) {
       setIsAddResponse(false);
       setError("Failed to add user");
@@ -101,24 +112,26 @@ const UsersPage = () => {
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
-    setGetApi(value.toLowerCase()); // This will trigger `useEffect` and call API
+    setGetApi(true); // This will trigger `useEffect` and call API
   };
 
  
 
   const sortData = (sortBy) => {
-    console.log("sortBy===========", sortBy)
     const sortOrder =
-      sortConfig.sortBy === sortBy && sortConfig.sortOrder === "asc" ? "desc" : "asc";
-      
+      sortConfig.sortBy === sortBy && sortConfig.sortOrder === "asc"
+        ? "desc"
+        : "asc";
+
     setSortConfig({ sortBy, sortOrder });
-    console.log("sortConfigs-------------", sortConfig)
-    setGetApi(sortConfig); // This will trigger `useEffect` and call API
+    setGetApi(true); // This will trigger `useEffect` and call API
   };
 
   const handleEditUser = (id) => {
     const userToEdit = users.find((user) => user.id === id);
     setEditingUser(userToEdit);
+    // Close the dropdown
+    setDropdownOpen(null);
   };
 
   const handleSaveEdit = async () => {
@@ -139,6 +152,7 @@ const UsersPage = () => {
       setUsers(updatedUsers);
       setFilteredUsers(updatedUsers);
       setEditingUser(null);
+      setGetApi(true);
     } catch (err) {
       setIsEditResponse(false);
       setError("Failed to update user");
@@ -156,6 +170,9 @@ const UsersPage = () => {
       const updatedUsers = users.filter((user) => user.id !== id);
       setUsers(updatedUsers);
       setFilteredUsers(updatedUsers);
+      setGetApi(true);
+      // Close the dropdown
+      setDropdownOpen(null);
     } catch (err) {
       setError("Failed to delete user");
     }
@@ -191,6 +208,10 @@ const UsersPage = () => {
     }
   };
 
+  const handleDropdownToggle = (userId) => {
+    setDropdownOpen(dropdownOpen === userId ? null : userId); // Toggle the dropdown visibility
+  };
+
   if (loading) return <p>Loading...</p>;
   // if (loading) return <ClipLoader color="#3498db" size={40} />;
 
@@ -205,6 +226,11 @@ const UsersPage = () => {
           className="fas fa-search"
           style={{ cursor: "pointer", fontSize: "20px", color: "#007bff" }}
         ></i>
+
+        <button onClick={() => setIsModalOpen(true)} style={styles.addButton}>
+          Add User
+        </button>
+
         <input
           type="text"
           placeholder="Search by any column..."
@@ -214,146 +240,155 @@ const UsersPage = () => {
             fontSize: "16px",
             padding: "5px",
             margin: "10px 0",
+            marginTop: "50px",
             float: "right",
             border: "2px solid #555",
           }}
         />
       </div>
 
-      <table style={styles.table}>
-        <thead>
-          <tr>
-            <th style={styles.th} onClick={() => setUsers(sortData("name"))}>
-              Name{" "}
-              {sortConfig.sortBy === "name"
-                ? sortConfig.sortOrder === "asc"
-                  ? "↑↑"
-                  : "↓↓"
-                : ""}
-            </th>
-            <th style={styles.th} onClick={() => setUsers(sortData("age"))}>
-              Age{" "}
-              {sortConfig.sortBy === "age"
-                ? sortConfig.sortOrder === "asc"
-                  ? "↑↑"
-                  : "↓↓"
-                : ""}
-            </th>
-            <th style={styles.th} onClick={() => setUsers(sortData("gender"))}>
-              Gender{" "}
-              {sortConfig.sortBy === "gender"
-                ? sortConfig.sortOrder === "asc"
-                  ? "↑↑"
-                  : "↓↓"
-                : ""}
-            </th>
-            <th
-              style={styles.th}
-              onClick={() => setUsers(sortData("profession"))}
-            >
-              Profession{" "}
-              {sortConfig.sortBy === "profession"
-                ? sortConfig.sortOrder === "asc"
-                  ? "↑↑"
-                  : "↓↓"
-                : ""}
-            </th>
-            <th style={styles.th}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentData?.map((user) => (
-            <tr key={user.id} style={styles.row}>
-              <td style={styles.td}>
-                {editingUser && editingUser.id === user.id ? (
-                  <input
-                    value={editingUser.name}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, name: e.target.value })
-                    }
-                    style={styles.input}
-                  />
-                ) : (
-                  user.name
-                )}
-              </td>
-              <td style={styles.td}>
-                {editingUser && editingUser.id === user.id ? (
-                  <input
-                    type="number"
-                    value={editingUser.age}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, age: e.target.value })
-                    }
-                    style={styles.input}
-                  />
-                ) : (
-                  user.age
-                )}
-              </td>
-              <td style={styles.td}>
-                {editingUser && editingUser.id === user.id ? (
-                  <input
-                    value={editingUser.gender}
-                    onChange={(e) =>
-                      setEditingUser({ ...editingUser, gender: e.target.value })
-                    }
-                    style={styles.input}
-                  />
-                ) : (
-                  user.gender
-                )}
-              </td>
-              <td style={styles.td}>
-                {editingUser && editingUser.id === user.id ? (
-                  <input
-                    value={editingUser.profession}
-                    onChange={(e) =>
-                      setEditingUser({
-                        ...editingUser,
-                        profession: e.target.value,
-                      })
-                    }
-                    style={styles.input}
-                  />
-                ) : (
-                  user.profession
-                )}
-              </td>
-              <td style={styles.td}>
-                {editingUser && editingUser.id === user.id ? (
-                  <>
-                    <button onClick={handleSaveEdit} style={styles.saveButton}>
+      <div style={styles.tableWrapper}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th} onClick={() => setUsers(sortData("name"))}>
+                Name{" "}
+                {sortConfig.sortBy === "name"
+                  ? sortConfig.sortOrder === "asc"
+                    ? "↑↑"
+                    : "↓↓"
+                  : ""}
+              </th>
+              <th style={styles.th} onClick={() => setUsers(sortData("age"))}>
+                Age{" "}
+                {sortConfig.sortBy === "age"
+                  ? sortConfig.sortOrder === "asc"
+                    ? "↑↑"
+                    : "↓↓"
+                  : ""}
+              </th>
+              <th
+                style={styles.th}
+                onClick={() => setUsers(sortData("gender"))}
+              >
+                Gender{" "}
+                {sortConfig.sortBy === "gender"
+                  ? sortConfig.sortOrder === "asc"
+                    ? "↑↑"
+                    : "↓↓"
+                  : ""}
+              </th>
+              <th
+                style={styles.th}
+                onClick={() => setUsers(sortData("profession"))}
+              >
+                Profession{" "}
+                {sortConfig.sortBy === "profession"
+                  ? sortConfig.sortOrder === "asc"
+                    ? "↑↑"
+                    : "↓↓"
+                  : ""}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentData?.map((user) => (
+              <tr key={user.id} style={styles.row}>
+                <td style={styles.td}>
+                  {editingUser && editingUser.id === user.id ? (
+                    <input
+                      value={editingUser.name}
+                      onChange={(e) =>
+                        setEditingUser({ ...editingUser, name: e.target.value })
+                      }
+                      style={styles.input}
+                    />
+                  ) : (
+                    user.name
+                  )}
+                </td>
+                <td style={styles.td}>
+                  {editingUser && editingUser.id === user.id ? (
+                    <input
+                      type="number"
+                      value={editingUser.age}
+                      onChange={(e) =>
+                        setEditingUser({ ...editingUser, age: e.target.value })
+                      }
+                      style={styles.input}
+                    />
+                  ) : (
+                    user.age
+                  )}
+                </td>
+                <td style={styles.td}>
+                  {editingUser && editingUser.id === user.id ? (
+                    <input
+                      value={editingUser.gender}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          gender: e.target.value,
+                        })
+                      }
+                      style={styles.input}
+                    />
+                  ) : (
+                    user.gender
+                  )}
+                </td>
+                <td style={styles.td}>
+                  {editingUser && editingUser.id === user.id ? (
+                    <input
+                      value={editingUser.profession}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          profession: e.target.value,
+                        })
+                      }
+                      style={styles.input}
+                    />
+                  ) : (
+                    user.profession
+                  )}
+                </td>
+
+                {/* Conditionally display Save Button */}
+                {editingUser && editingUser.id === user.id && (
+                  <td style={styles.td}>
+                    <button
+                      onClick={() => handleSaveEdit(user.id)} // Save the entire row
+                      style={styles.saveButton}
+                    >
                       Save
                     </button>
-                    <button
-                      onClick={() => setEditingUser(null)}
-                      style={styles.cancelButton}
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => handleEditUser(user.id)}
-                      style={styles.editButton}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteUser(user.id)}
-                      style={styles.deleteButton}
-                    >
-                      Delete
-                    </button>
-                  </>
+                  </td>
                 )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+                {/* Dots button and dropdown placed inside the table row */}
+                <td style={styles.dotsContainer}>
+                  <button
+                    onClick={() => handleDropdownToggle(user.id)}
+                    style={styles.dotsButton}
+                  >
+                    <span style={styles.dot}></span>
+                    <span style={styles.dot}></span>
+                    <span style={styles.dot}></span>
+                  </button>
+                  {/* Dropdown Menu */}
+                  {dropdownOpen === user.id && (
+                    <div style={{ ...styles.dropdownMenu, left: "1350px" }}>
+                      <p onClick={() => handleEditUser(user.id)}>Edit</p>
+                      <p onClick={() => handleDeleteUser(user.id)}>Delete</p>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* Popup message */}
       <div style={{ textAlign: "center", marginTop: "50px" }}>
@@ -388,38 +423,51 @@ const UsersPage = () => {
         </button>
       </div>
 
-      <div style={styles.addUser}>
-        <h3 style={styles.addUserHeader}>Add New User</h3>
-        <input
-          placeholder="Name"
-          value={newUser.name}
-          onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-          style={styles.input}
-        />
-        <input
-          placeholder="Age"
-          value={newUser.age}
-          onChange={(e) => setNewUser({ ...newUser, age: e.target.value })}
-          style={styles.input}
-        />
-        <input
-          placeholder="Gender"
-          value={newUser.gender}
-          onChange={(e) => setNewUser({ ...newUser, gender: e.target.value })}
-          style={styles.input}
-        />
-        <input
-          placeholder="Profession"
-          value={newUser.profession}
-          onChange={(e) =>
-            setNewUser({ ...newUser, profession: e.target.value })
-          }
-          style={styles.input}
-        />
-        <button onClick={handleAddUser} style={styles.addButton}>
-          Add User
-        </button>
-      </div>
+      {/* Add new user popup */}
+      {isModalOpen && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3 style={styles.addUserHeader}>Add New User</h3>
+            <input
+              placeholder="Name"
+              value={newUser.name}
+              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              style={styles.input}
+            />
+            <input
+              placeholder="Age"
+              value={newUser.age}
+              onChange={(e) => setNewUser({ ...newUser, age: e.target.value })}
+              style={styles.input}
+            />
+            <input
+              placeholder="Gender"
+              value={newUser.gender}
+              onChange={(e) =>
+                setNewUser({ ...newUser, gender: e.target.value })
+              }
+              style={styles.input}
+            />
+            <input
+              placeholder="Profession"
+              value={newUser.profession}
+              onChange={(e) =>
+                setNewUser({ ...newUser, profession: e.target.value })
+              }
+              style={styles.input}
+            />
+            <button onClick={handleAddUser} style={styles.addButton}>
+              Add User
+            </button>
+            <button
+              onClick={() => setIsModalOpen(false)}
+              style={styles.cancelAddButton}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -434,6 +482,7 @@ const styles = {
     color: "#160d27",
   },
   table: {
+    marginTop: "100px",
     width: "100%",
     borderCollapse: "collapse",
     border: "2px solid #999",
@@ -463,6 +512,16 @@ const styles = {
     border: "none",
     padding: "5px 10px",
     cursor: "pointer",
+  },
+
+  addButton: {
+    backgroundColor: "#4CAF50",
+    color: "white",
+    border: "2px solid #999",
+    padding: "5px 10px",
+    marginTop: "50px",
+    cursor: "pointer",
+    float: "left",
   },
   cancelButton: {
     backgroundColor: "#f44336",
@@ -498,14 +557,9 @@ const styles = {
   },
   addUserHeader: {
     marginBottom: "10px",
+    color: "#333",
   },
-  addButton: {
-    backgroundColor: "#4CAF50",
-    color: "white",
-    border: "none",
-    padding: "5px 10px",
-    cursor: "pointer",
-  },
+
   errorPopup: {
     position: "absolute",
     top: "50%",
@@ -536,6 +590,72 @@ const styles = {
     fontSize: "16px",
     fontWeight: "bold",
     zIndex: 1000,
+  },
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(115, 120, 121, 0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#f0f8ff",
+    padding: "20px",
+    borderRadius: "10px",
+    boxShadow: "0px 4px 6px rgba(59, 84, 106, 0.1)",
+    width: "400px",
+    textAlign: "center",
+  },
+  cancelAddButton: {
+    marginTop: "50px",
+    padding: "5px 10px",
+    backgroundColor: "#dc3545",
+    color: "#fff",
+    border: "2px solid #999",
+    cursor: "pointer",
+    float: "right",
+  },
+  dotsButton: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: "0",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    height: "20px", 
+    marginLeft: "5px",
+  },
+  dot: {
+    width: "6px",
+    height: "6px",
+    borderRadius: "20%",
+    backgroundColor: "#333", 
+    margin: "2px 0",
+  },
+  dropdownMenu: {
+    position: "absolute",
+    backgroundColor: "white",
+    border: "1px solid #ddd",
+    borderRadius: "5px",
+    padding: "5px 10px",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    display: "flex",
+    flexDirection: "column", 
+    zIndex: 1000, 
+  },
+  dotsContainer: {
+    display: "flex",
+    flexDirection: "column",
+    marginLeft: "1px",
+  },
+
+  dotWrapper: {
+    marginBottom: "10px", 
   },
 };
 
