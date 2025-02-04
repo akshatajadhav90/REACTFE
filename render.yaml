@@ -1,0 +1,13 @@
+services:
+  - name: my-react-app
+    type: web
+    runtime: static
+    repo: https://github.com/akshatajadhav90/REACTFE
+    branch: final-code
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    envVars:
+      - key: NODE_VERSION
+        value: 22.11.0 
+      - key: REACT_APP_API_URL
+        value: "http://localhost:4008/api"
